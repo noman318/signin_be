@@ -17,7 +17,7 @@ app.use(
 );
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "Noman123",
+    secret: String(process.env.SESSION_SECRET) || "Noman123",
     resave: false,
     saveUninitialized: false,
   })
