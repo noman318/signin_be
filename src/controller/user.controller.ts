@@ -43,7 +43,7 @@ const getSingleUserByID = async (req: Request, res: Response) => {
     console.log("error", error);
   }
 };
-interface CustomRequest extends Request {
+export interface CustomRequest extends Request {
   session: Session & { user?: any };
 }
 const loginUser = async (req: CustomRequest, res: Response) => {
