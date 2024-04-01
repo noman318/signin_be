@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../utils/db";
 import { Session } from "express-session"; // Import Session type from express-session
+import crypto from "crypto";
+import { hashPassword } from "../utils/helperFunction";
 
 const testUserController = (req: Request, res: Response) => {
   res.json({ message: "User Controller is running" });
@@ -20,7 +22,6 @@ const getUserById = async (nEmailUserID: string) => {
 };
 const getUser = async (req: Request, res: Response) => {
   try {
-    console.log("calling");
     const users = await prisma.memailuser.findMany();
     console.log("users", users);
     res.json(users);
@@ -30,11 +31,9 @@ const getUser = async (req: Request, res: Response) => {
 };
 
 const getSingleUserByID = async (req: Request, res: Response) => {
-  // console.log("req.params", req.params);
   const { id } = req.params;
   // console.log("id", id);
   try {
-    console.log("calling");
     const user = await prisma.memailuser.findUnique({
       where: { nEmailUserID: +id },
     });
@@ -45,24 +44,40 @@ const getSingleUserByID = async (req: Request, res: Response) => {
   }
 };
 interface CustomRequest extends Request {
-  session: Session & { user?: any }; // Make sure session property matches Session type
+  session: Session & { user?: any };
 }
 const loginUser = async (req: CustomRequest, res: Response) => {
   try {
-    const { email } = req.body;
+    const { sEmail, sPassword } = req.body;
     // console.log("req.body", req.body);
     // if (!user || !account) {
     //   return res.status(400).json({ message: "Invalid request body" });
     // }
     const existingUser = await prisma.memailuser.findUnique({
-      where: { sEmail: email },
+      where: { sEmail: sEmail },
+      select: {
+        nEmailUserID: true,
+        sEmail: true,
+        sPassword: true,
+        sFullName: true,
+        bEmailVerified: true,
+      },
     });
     // console.log("existingUser", existingUser);
     if (!existingUser || existingUser.bEmailVerified === 0) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    req.session.user = existingUser;
-    return res.status(200).json({ success: true });
+    const userPassword = existingUser?.sPassword;
+
+    const newPassword = hashPassword(sPassword);
+    if (newPassword === userPassword) {
+      req.session.user = existingUser;
+      return res
+        .status(200)
+        .json({ data: { success: true, user: existingUser } });
+    } else {
+      return res.status(200).json({ message: "Invalid Email or Password" });
+    }
   } catch (error) {
     console.error("Error processing login:", error);
     return res.status(500).json({ message: "Internal Server Error" });
