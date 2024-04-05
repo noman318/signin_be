@@ -72,9 +72,11 @@ const loginUser = async (req: CustomRequest, res: Response) => {
     const newPassword = hashPassword(sPassword);
     if (newPassword === userPassword) {
       req.session.user = existingUser;
+      const { nEmailUserID, sEmail, sFullName, bEmailVerified } = existingUser;
+      const newUserData = { nEmailUserID, sEmail, sFullName, bEmailVerified };
       return res
         .status(200)
-        .json({ data: { success: true, user: existingUser } });
+        .json({ data: { success: true, user: newUserData } });
     } else {
       return res.status(200).json({ message: "Invalid Email or Password" });
     }
